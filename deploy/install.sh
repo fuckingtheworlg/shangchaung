@@ -181,10 +181,11 @@ enabled=1
 module_hotfixes=true
 REPO
       $PKG clean all >/dev/null 2>&1 || true
-      if ! $PKG install $INSTALL_OPTS nginx; then
+      # OpenCloudOS 默认会把 nginx 加入 exclude，必须用 --disableexcludes=all 绕过
+      if ! $PKG install $INSTALL_OPTS --disableexcludes=all nginx; then
         warn "nginx 官方源失败，退到 EPEL"
         $PKG install $INSTALL_OPTS epel-release || true
-        $PKG install $INSTALL_OPTS nginx
+        $PKG install $INSTALL_OPTS --disableexcludes=all nginx
       fi
     fi
   fi
