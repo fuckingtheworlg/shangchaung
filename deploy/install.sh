@@ -164,29 +164,37 @@ if ! command -v nginx >/dev/null 2>&1; then
   if [[ "$PKG" == "apt-get" ]]; then
     apt-get install $INSTALL_OPTS nginx
   else
-    # CentOS / RHEL / OpenCloudOS 默认源通常没 nginx：
-    # 1) 先试默认源（少数 OpenCloudOS 自带）
-    # 2) 失败 → 加 nginx 官方仓库（nginx.org，国内可直连）
-    # 3) 再失败 → 退到 EPEL
-    if ! $PKG install $INSTALL_OPTS nginx 2>/dev/null; then
-      warn "默认源没 nginx，添加 nginx 官方仓库"
+    # CentOS / RHEL / OpenCloudOS 装 nginx 的多重 fallback：
+    # 1) 默认源（少数发行版自带）
+    # 2) 直接下载 nginx.org 的旧版本 RPM（1.26.3 stable 依赖宽松，绕开
+    #    nginx-stable 仓库 metadata 只索引最新 1.30.x 但需要 OpenSSL 3.2 的问题）
+    # 3) 退到 EPEL
+    NGINX_OK="false"
+    if $PKG install $INSTALL_OPTS --disableexcludes=all nginx 2>/dev/null; then
+      NGINX_OK="true"
+    fi
+    if [[ "$NGINX_OK" != "true" ]]; then
+      warn "默认源无 nginx，尝试 nginx.org 直装 RPM"
       RHEL_VER="$(. /etc/os-release && echo "${VERSION_ID%%.*}")"
       [[ "$RHEL_VER" == "23" || -z "$RHEL_VER" ]] && RHEL_VER=9
-      cat > /etc/yum.repos.d/nginx.repo <<REPO
-[nginx-stable]
-name=nginx stable repo
-baseurl=https://nginx.org/packages/centos/${RHEL_VER}/x86_64/
-gpgcheck=0
-enabled=1
-module_hotfixes=true
-REPO
-      $PKG clean all >/dev/null 2>&1 || true
-      # OpenCloudOS 默认会把 nginx 加入 exclude，必须用 --disableexcludes=all 绕过
-      if ! $PKG install $INSTALL_OPTS --disableexcludes=all nginx; then
-        warn "nginx 官方源失败，退到 EPEL"
-        $PKG install $INSTALL_OPTS epel-release || true
-        $PKG install $INSTALL_OPTS --disableexcludes=all nginx
-      fi
+      # 依次尝试几个 stable 版本，对系统库要求由严到松
+      for NV in 1.26.3 1.24.0 1.22.1; do
+        RPM_URL="https://nginx.org/packages/centos/${RHEL_VER}/x86_64/RPMS/nginx-${NV}-1.el${RHEL_VER}.ngx.x86_64.rpm"
+        RPM_FILE="/tmp/nginx-${NV}.el${RHEL_VER}.rpm"
+        log "下载并尝试装 nginx ${NV}"
+        if ! timeout 60 curl -fL -o "$RPM_FILE" "$RPM_URL"; then
+          warn "${NV} 下载失败，试下一个"; continue
+        fi
+        if $PKG install $INSTALL_OPTS --disableexcludes=all "$RPM_FILE"; then
+          NGINX_OK="true"; break
+        fi
+        warn "${NV} 依赖不满足，试更老版本"
+      done
+    fi
+    if [[ "$NGINX_OK" != "true" ]]; then
+      warn "nginx.org RPM 全部失败，退到 EPEL"
+      $PKG install $INSTALL_OPTS epel-release || true
+      $PKG install $INSTALL_OPTS --disableexcludes=all nginx
     fi
   fi
 fi
