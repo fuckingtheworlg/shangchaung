@@ -164,21 +164,28 @@ if ! command -v nginx >/dev/null 2>&1; then
   if [[ "$PKG" == "apt-get" ]]; then
     apt-get install $INSTALL_OPTS nginx
   else
-    # CentOS / RHEL / OpenCloudOS 默认源里没 nginx，先尝试官方仓库；
-    # 失败再尝试 EPEL。已存在仓库则跳过。
+    # CentOS / RHEL / OpenCloudOS 默认源通常没 nginx：
+    # 1) 先试默认源（少数 OpenCloudOS 自带）
+    # 2) 失败 → 加 nginx 官方仓库（nginx.org，国内可直连）
+    # 3) 再失败 → 退到 EPEL
     if ! $PKG install $INSTALL_OPTS nginx 2>/dev/null; then
-      warn "默认源没 nginx，添加 nginx 官方仓库（腾讯云镜像）"
+      warn "默认源没 nginx，添加 nginx 官方仓库"
       RHEL_VER="$(. /etc/os-release && echo "${VERSION_ID%%.*}")"
       [[ "$RHEL_VER" == "23" || -z "$RHEL_VER" ]] && RHEL_VER=9
       cat > /etc/yum.repos.d/nginx.repo <<REPO
 [nginx-stable]
 name=nginx stable repo
-baseurl=https://mirrors.cloud.tencent.com/nginx/centos/${RHEL_VER}/x86_64/
+baseurl=https://nginx.org/packages/centos/${RHEL_VER}/x86_64/
 gpgcheck=0
 enabled=1
 module_hotfixes=true
 REPO
-      $PKG install $INSTALL_OPTS nginx
+      $PKG clean all >/dev/null 2>&1 || true
+      if ! $PKG install $INSTALL_OPTS nginx; then
+        warn "nginx 官方源失败，退到 EPEL"
+        $PKG install $INSTALL_OPTS epel-release || true
+        $PKG install $INSTALL_OPTS nginx
+      fi
     fi
   fi
 fi
