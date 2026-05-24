@@ -1,0 +1,24 @@
+<view class="container" wx:if="{{item}}">
+  <view class="title">{{item.title}}</view>
+  <view class="time">{{item.createdAt}}</view>
+
+  <image
+    wx:if="{{item.cover}}"
+    class="cover"
+    src="{{item.cover}}"
+    mode="widthFix"
+    bindtap="onImgTap"
+    data-src="{{item.cover}}"
+  />
+
+  <!-- 富文本渲染：mp-html 是更强的方案，这里用官方 rich-text 保持零依赖 -->
+  <!-- rich-text 支持 img/p/span/div/strong/em 等基础标签，img 自带点击事件 -->
+  <rich-text
+    class="content"
+    nodes="{{item.content}}"
+    bindtap="onImgTap"
+  />
+</view>
+
+<view wx:elif="{{loading}}" class="loading">加载中...</view>
+<view wx:else class="empty">内容不存在</view>

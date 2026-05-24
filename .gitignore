@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Uploads (server local storage)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Prisma
+server/prisma/migrations/dev.db*
+
+# Mini program build artifacts
+miniprogram/miniprogram_npm/
+
+# PM2
+.pm2/
+ecosystem.config.local.js

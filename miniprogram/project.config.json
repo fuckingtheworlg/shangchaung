@@ -1,0 +1,25 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "shangchaun",
+  "description": "上传 - 内容展示小程序",
+  "appid": "wx0a04acd07d76144e",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true,
+    "uglifyFileName": true,
+    "useCompilerPlugins": false,
+    "checkInvalidKey": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.5.0",
+  "condition": {}
+}

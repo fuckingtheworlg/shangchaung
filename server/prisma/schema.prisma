@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// 文章（图文/案例展示）
+model Article {
+  id         BigInt   @id @default(autoincrement())
+  title      String   @db.VarChar(200)
+  cover      String?  @db.VarChar(500)
+  content    String   @db.LongText
+  status     Int      @default(0) @db.TinyInt /// 0=草稿 1=已发布
+  sort       Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([status, sort, createdAt])
+  @@map("articles")
+}
