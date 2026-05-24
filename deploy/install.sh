@@ -161,7 +161,26 @@ fi
 # ====== 5/10 安装 Nginx ======
 log "5/10 安装 Nginx"
 if ! command -v nginx >/dev/null 2>&1; then
-  $PKG install $INSTALL_OPTS nginx
+  if [[ "$PKG" == "apt-get" ]]; then
+    apt-get install $INSTALL_OPTS nginx
+  else
+    # CentOS / RHEL / OpenCloudOS 默认源里没 nginx，先尝试官方仓库；
+    # 失败再尝试 EPEL。已存在仓库则跳过。
+    if ! $PKG install $INSTALL_OPTS nginx 2>/dev/null; then
+      warn "默认源没 nginx，添加 nginx 官方仓库（腾讯云镜像）"
+      RHEL_VER="$(. /etc/os-release && echo "${VERSION_ID%%.*}")"
+      [[ "$RHEL_VER" == "23" || -z "$RHEL_VER" ]] && RHEL_VER=9
+      cat > /etc/yum.repos.d/nginx.repo <<REPO
+[nginx-stable]
+name=nginx stable repo
+baseurl=https://mirrors.cloud.tencent.com/nginx/centos/${RHEL_VER}/x86_64/
+gpgcheck=0
+enabled=1
+module_hotfixes=true
+REPO
+      $PKG install $INSTALL_OPTS nginx
+    fi
+  fi
 fi
 systemctl enable nginx >/dev/null 2>&1 || true
 log "Nginx 就绪"
