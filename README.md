@@ -49,8 +49,23 @@ npm run dev
 - AppID：`wx0a04acd07d76144e`
 - 后端地址：在 `miniprogram/config.js` 中切换（开发用 IP，上线换备案后的 HTTPS 域名）
 
-## 部署
+## 部署到服务器
 
 服务器：腾讯云轻量应用服务器（OpenCloudOS）`1.117.64.57`
 
-详见 [`deploy/README.md`](./deploy/README.md)。
+**一键部署**（首次在裸服务器上跑）：
+
+```bash
+curl -fsSL https://ghfast.top/https://raw.githubusercontent.com/fuckingtheworlg/shangchaung/main/deploy/install.sh -o install.sh
+sudo bash install.sh
+```
+
+脚本会自动装 Node / Docker / Nginx、`git clone`（带 GitHub 镜像 fallback）、构建、注册 systemd、配置 Nginx。
+
+**后续更新**：
+
+```bash
+sudo bash /opt/shangchaun/deploy/update.sh
+```
+
+详细说明、域名 HTTPS 切换、常见问题：见 [`deploy/README.md`](./deploy/README.md)。

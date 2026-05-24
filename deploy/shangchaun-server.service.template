@@ -1,0 +1,21 @@
+[Unit]
+Description=shangchaun backend API
+After=network.target
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=@@APP_DIR@@/server
+ExecStart=@@NODE@@ @@APP_DIR@@/server/dist/index.js
+EnvironmentFile=@@APP_DIR@@/server/.env
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=shangchaun-server
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

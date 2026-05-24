@@ -1,0 +1,81 @@
+# 由 install.sh 自动渲染并复制到 /etc/nginx/conf.d/shangchaun.conf
+# 占位符：@@APP_DIR@@
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
+    client_max_body_size 20m;
+    server_tokens off;
+
+    # 1. 后台管理（React SPA, base 设为 /admin/）
+    location /admin/ {
+        alias @@APP_DIR@@/admin/dist/;
+        index index.html;
+        try_files $uri $uri/ /admin/index.html;
+    }
+
+    # 兼容裸路径：访问根目录跳转到 /admin/
+    location = / {
+        return 302 /admin/;
+    }
+
+    # 2. 后端 API
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # 3. 用户上传的图片（Nginx 直接走静态，比 Node 高效）
+    location /uploads/ {
+        alias @@APP_DIR@@/server/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+    }
+
+    # 4. 健康检查
+    location /health {
+        proxy_pass http://127.0.0.1:3000;
+        access_log off;
+    }
+}
+
+# ============================================================
+# 域名备案 + HTTPS 完成后，按以下模板替换上面整个 server 块：
+# ============================================================
+#
+# server {
+#     listen 80;
+#     server_name your-domain.com;
+#     return 301 https://$host$request_uri;
+# }
+#
+# server {
+#     listen 443 ssl http2;
+#     server_name your-domain.com;
+#
+#     ssl_certificate     /etc/nginx/certs/your-domain.com.crt;
+#     ssl_certificate_key /etc/nginx/certs/your-domain.com.key;
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers HIGH:!aNULL:!MD5;
+#
+#     client_max_body_size 20m;
+#
+#     location /admin/    { alias @@APP_DIR@@/admin/dist/; try_files $uri $uri/ /admin/index.html; }
+#     location = /         { return 302 /admin/; }
+#     location /api/       { proxy_pass http://127.0.0.1:3000; proxy_set_header Host $host; }
+#     location /uploads/   { alias @@APP_DIR@@/server/uploads/; expires 30d; }
+#     location /health     { proxy_pass http://127.0.0.1:3000; }
+# }
+#
+# 切换 HTTPS 后还要做的事：
+#   1. 改 /opt/shangchaun/server/.env 的 PUBLIC_BASE_URL 为 https://your-domain.com
+#   2. sudo systemctl restart shangchaun-server
+#   3. 改 /opt/shangchaun/miniprogram/config.js 的 baseURL
+#   4. 微信公众平台 → 开发管理 → 服务器域名 → request/downloadFile 都加上域名
