@@ -33,15 +33,19 @@ client.interceptors.response.use((resp) => {
     return resp;
 }, (err) => {
     const status = err?.response?.status;
-    if (status === 401) {
+    const reqUrl = err?.config?.url || '';
+    const isLoginApi = reqUrl.includes('/admin/login');
+    const serverMsg = err?.response?.data?.message;
+    if (status === 401 && !isLoginApi) {
+        // 业务接口 401 才视为登录态失效
         clearToken();
-        message.error('登录已过期，请重新登录');
+        message.error(serverMsg || '登录已过期，请重新登录');
         if (location.hash !== '#/login') {
             location.hash = '#/login';
         }
     }
     else {
-        message.error(err?.response?.data?.message || err.message || '网络错误');
+        message.error(serverMsg || err.message || '网络错误');
     }
     return Promise.reject(err);
 });

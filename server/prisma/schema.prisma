@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// 全局设置（KV 表，便于后续扩展任何配置项）
+model Setting {
+  key       String   @id @db.VarChar(64)
+  value     String   @db.VarChar(500)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
 /// 文章（图文/案例展示）
 model Article {
   id         BigInt   @id @default(autoincrement())

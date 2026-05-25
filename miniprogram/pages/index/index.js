@@ -1,5 +1,16 @@
 const { request } = require('../../utils/request.js');
 
+// 封面宽度固定 200rpx，根据 ratio "W:H" 算高度（单位 rpx）
+function calcCoverHeight(ratio) {
+  const COVER_WIDTH_RPX = 200;
+  const m = /^(\d+):(\d+)$/.exec(String(ratio || '1:1'));
+  if (!m) return COVER_WIDTH_RPX;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  if (!w || !h) return COVER_WIDTH_RPX;
+  return Math.round((COVER_WIDTH_RPX * h) / w);
+}
+
 Page({
   data: {
     list: [],
@@ -8,14 +19,31 @@ Page({
     total: 0,
     loading: false,
     finished: false,
+    coverWidth: 200,         // rpx
+    coverHeight: 200,        // rpx
   },
 
   onLoad() {
+    this.loadSettings();
     this.loadFirst();
   },
 
   onPullDownRefresh() {
-    this.loadFirst().then(() => wx.stopPullDownRefresh());
+    Promise.all([this.loadSettings(), this.loadFirst()])
+      .then(() => wx.stopPullDownRefresh());
+  },
+
+  async loadSettings() {
+    try {
+      const data = await request({ url: '/api/settings' });
+      const ratio = (data && data.cover_aspect_ratio) || '1:1';
+      this.setData({
+        coverWidth: 200,
+        coverHeight: calcCoverHeight(ratio),
+      });
+    } catch (e) {
+      // 拉取失败保持默认 1:1，不影响列表
+    }
   },
 
   onReachBottom() {

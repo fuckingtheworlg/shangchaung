@@ -6,13 +6,18 @@
   <view
     wx:for="{{list}}"
     wx:key="id"
-    class="card {{item.cover ? '' : 'no-cover'}}"
+    class="card"
     bindtap="goDetail"
     data-id="{{item.id}}"
   >
-    <view class="cover" wx:if="{{item.cover}}">
-      <image src="{{item.cover}}" mode="aspectFill" lazy-load="{{true}}" />
-    </view>
+    <image
+      wx:if="{{item.cover}}"
+      class="cover"
+      src="{{item.cover}}"
+      mode="aspectFill"
+      lazy-load="{{true}}"
+      style="width:{{coverWidth}}rpx;height:{{coverHeight}}rpx;"
+    />
     <view class="info">
       <view class="title">{{item.title}}</view>
       <view class="time">{{item.createdAt}}</view>

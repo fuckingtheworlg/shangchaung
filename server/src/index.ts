@@ -5,7 +5,9 @@ import { config } from './lib/config';
 import authRouter from './routes/auth';
 import adminUploadRouter from './routes/admin.upload';
 import adminArticlesRouter from './routes/admin.articles';
+import adminSettingsRouter from './routes/admin.settings';
 import publicArticlesRouter from './routes/public.articles';
+import publicSettingsRouter from './routes/public.settings';
 
 const app = express();
 
@@ -27,9 +29,11 @@ app.use('/uploads', express.static(config.uploadDir, {
 app.use('/api/admin', authRouter);                  // /api/admin/login
 app.use('/api/admin', adminUploadRouter);           // /api/admin/upload
 app.use('/api/admin/articles', adminArticlesRouter);
+app.use('/api/admin/settings', adminSettingsRouter);
 
 // 公开接口（小程序使用）
 app.use('/api/articles', publicArticlesRouter);
+app.use('/api/settings', publicSettingsRouter);
 
 // 404
 app.use((req, res) => {
