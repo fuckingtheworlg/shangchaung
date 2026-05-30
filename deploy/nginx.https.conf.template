@@ -1,27 +1,40 @@
 # 由 enable-https.sh 自动渲染并复制到 /etc/nginx/conf.d/shangchaun.conf
 # 占位符：
-#   @@DOMAIN@@   主域名（如 www.xiaoran11.top）
-#   @@APP_DIR@@  代码根（如 /opt/shangchaun）
-#   @@CERT@@     证书路径（如 /etc/nginx/certs/www.xiaoran11.top.crt）
-#   @@KEY@@      私钥路径（如 /etc/nginx/certs/www.xiaoran11.top.key）
+#   @@DOMAIN@@       主域名（如 www.xiaoran11.top）
+#   @@DOMAIN_NAKED@@ 裸域名（如 xiaoran11.top）
+#   @@APP_DIR@@      代码根（如 /opt/shangchaun）
+#   @@CERT@@         证书路径
+#   @@KEY@@          私钥路径
 
-# 1) 裸域：80 → 301 跳 https://www
+# 通用 ssl 参数（避免在多个 server 块里重复）
+ssl_session_cache shared:SSL_SHANGCHAUN:10m;
+ssl_session_timeout 10m;
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_ciphers HIGH:!aNULL:!MD5;
+ssl_prefer_server_ciphers on;
+
+# 1) 任何 80 端口请求都跳到 https://主域名
 server {
     listen 80;
     listen [::]:80;
-    server_name xiaoran11.top;
+    server_name @@DOMAIN@@ @@DOMAIN_NAKED@@;
     return 301 https://@@DOMAIN@@$request_uri;
 }
 
-# 2) www：80 → 301 跳 https://www（同名升级 HTTPS）
+# 2) 裸域 443：用同一张 SAN 证书，301 跳到主域名
 server {
-    listen 80;
-    listen [::]:80;
-    server_name @@DOMAIN@@;
-    return 301 https://$host$request_uri;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name @@DOMAIN_NAKED@@;
+
+    ssl_certificate     @@CERT@@;
+    ssl_certificate_key @@KEY@@;
+
+    return 301 https://@@DOMAIN@@$request_uri;
 }
 
-# 3) HTTPS 主服务
+# 3) 主域名 443：实际服务入口
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
@@ -30,13 +43,8 @@ server {
 
     ssl_certificate     @@CERT@@;
     ssl_certificate_key @@KEY@@;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
 
-    # 强制 HSTS（6 个月），可视需要调整或移除
+    # HSTS 6 个月；如果担心证书续期失败被锁，可改成 0 关闭
     add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
 
     client_max_body_size 20m;

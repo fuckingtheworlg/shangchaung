@@ -62,7 +62,10 @@ else
 fi
 
 log "4/7 渲染 HTTPS nginx 配置"
-sed -e "s|@@DOMAIN@@|${DOMAIN}|g" \
+# 推导裸域：把第一段 www. 去掉；如果不是 www 开头则等于 DOMAIN
+DOMAIN_NAKED="${DOMAIN_NAKED:-${DOMAIN#www.}}"
+sed -e "s|@@DOMAIN_NAKED@@|${DOMAIN_NAKED}|g" \
+    -e "s|@@DOMAIN@@|${DOMAIN}|g" \
     -e "s|@@APP_DIR@@|${APP_DIR}|g" \
     -e "s|@@CERT@@|${CERT}|g" \
     -e "s|@@KEY@@|${KEY}|g" \
