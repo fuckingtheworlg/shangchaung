@@ -7,6 +7,9 @@ import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/edit
 import { createArticle, getArticle, updateArticle } from '../api/articles';
 import { getToken } from '../api/client';
 
+// 单张图片上传上限（MB），需与后端 multer 及 nginx client_max_body_size 保持一致
+const MAX_UPLOAD_MB = 1024;
+
 export default function ArticleEdit() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -45,15 +48,27 @@ export default function ArticleEdit() {
   const toolbarConfig: Partial<IToolbarConfig> = {};
   const editorConfig: Partial<IEditorConfig> = useMemo(() => ({
     placeholder: '在此输入正文...支持图片、视频、表格、代码等',
+    // 把 wangEditor 自身的告警（含图片超限提示）统一走 antd message，避免用户看不到
+    customAlert: (info: string, type: string) => {
+      const fn = (message as any)[type] || message.info;
+      fn(info);
+    },
     MENU_CONF: {
       uploadImage: {
         server: '/api/admin/upload',
         fieldName: 'file',
-        maxFileSize: 10 * 1024 * 1024,
+        maxFileSize: MAX_UPLOAD_MB * 1024 * 1024,
+        timeout: 10 * 60 * 1000, // 大图上传放宽到 10 分钟
         headers: {
           Authorization: `Bearer ${getToken()}`,
         },
         // 后端已返回 { errno: 0, data: { url } }
+        onError(file: File, err: any, res: any) {
+          message.error(`「${file.name}」上传失败：${res?.message || err?.message || '请重试'}`);
+        },
+        onFailed(file: File, res: any) {
+          message.error(`「${file.name}」上传失败：${res?.message || '服务器拒绝'}`);
+        },
       },
     },
   }), []);
@@ -65,8 +80,8 @@ export default function ArticleEdit() {
     showUploadList: false,
     accept: 'image/*',
     beforeUpload: (file: File) => {
-      if (file.size > 10 * 1024 * 1024) {
-        message.error('封面图不能超过 10MB');
+      if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        message.error(`封面图不能超过 ${MAX_UPLOAD_MB}MB`);
         return Upload.LIST_IGNORE;
       }
       return true;

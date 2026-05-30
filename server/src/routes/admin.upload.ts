@@ -29,9 +29,11 @@ const storage = multer.diskStorage({
 
 const ALLOWED = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']);
 
+const MAX_UPLOAD_MB = 1024;
+
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 单文件 10MB
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (!ALLOWED.has(ext)) {
@@ -66,8 +68,12 @@ router.post('/upload', authRequired, upload.single('file'), (req, res) => {
 });
 
 // multer 错误统一处理（必须 4 参数）
-router.use((err: Error, _req: any, res: any, _next: any) => {
-  res.status(400).json({ errno: 1, message: err.message });
+router.use((err: any, _req: any, res: any, _next: any) => {
+  let message = err?.message || '上传失败';
+  if (err?.code === 'LIMIT_FILE_SIZE') {
+    message = `图片超过大小限制（最大 ${MAX_UPLOAD_MB}MB）`;
+  }
+  res.status(400).json({ errno: 1, message });
 });
 
 export default router;
