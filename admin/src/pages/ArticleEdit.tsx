@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Form, Input, InputNumber, Select, Button, Space, Upload, message, Card } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Form, Input, InputNumber, Select, Button, Space, Upload, message, Card, Typography } from 'antd';
+import { PlusOutlined, PictureOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Editor, Toolbar } from '@wangeditor/editor-for-react';
 import type { IDomEditor, IEditorConfig, IToolbarConfig } from '@wangeditor/editor';
@@ -99,6 +99,51 @@ export default function ArticleEdit() {
     },
   };
 
+  // 把图片插入到编辑器当前光标处（手机端绕开 wangEditor 工具栏下拉的可靠入口）
+  const insertImageToEditor = (url: string) => {
+    if (!editor) {
+      message.warning('编辑器未就绪，请稍候重试');
+      return;
+    }
+    if (editor.selection) {
+      editor.restoreSelection();
+    } else {
+      editor.focus(true);
+    }
+    editor.dangerouslyInsertHtml(`<img src="${url}" alt="" style="max-width:100%;"/>`);
+  };
+
+  // 独立「插入图片」按钮用的上传配置，走原生 <input type=file>，手机触摸可靠
+  const insertImageUploadProps = {
+    name: 'file',
+    action: '/api/admin/upload',
+    headers: { Authorization: `Bearer ${getToken()}` },
+    showUploadList: false,
+    accept: 'image/*',
+    multiple: true,
+    beforeUpload: (file: File) => {
+      if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        message.error(`图片不能超过 ${MAX_UPLOAD_MB}MB`);
+        return Upload.LIST_IGNORE;
+      }
+      return true;
+    },
+    onChange: (info: any) => {
+      const f = info.file;
+      if (f.status === 'done') {
+        const url = f.response?.data?.url || f.response?.url;
+        if (url) {
+          insertImageToEditor(url);
+          message.success('图片已插入正文');
+        } else {
+          message.error(f.response?.message || '上传失败');
+        }
+      } else if (f.status === 'error') {
+        message.error('上传失败，请重试');
+      }
+    },
+  };
+
   const onFinish = async (values: any) => {
     if (!values.title?.trim()) {
       message.warning('请填写标题');
@@ -155,6 +200,14 @@ export default function ArticleEdit() {
         </Form.Item>
 
         <Form.Item label="正文">
+          <Space style={{ marginBottom: 8 }} wrap>
+            <Upload {...insertImageUploadProps}>
+              <Button icon={<PictureOutlined />}>插入图片</Button>
+            </Upload>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              手机端若工具栏的图片按钮点不动，请用这个按钮插入图片（可多选）
+            </Typography.Text>
+          </Space>
           <div style={{ border: '1px solid #ccc', borderRadius: 4 }}>
             <Toolbar
               editor={editor}

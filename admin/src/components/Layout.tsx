@@ -15,7 +15,7 @@ export default function Layout() {
 
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
-      <Sider theme="dark" width={200}>
+      <Sider theme="dark" width={200} breakpoint="lg" collapsedWidth="0">
         <div style={{ color: '#fff', textAlign: 'center', padding: 16, fontSize: 18 }}>
           上传 · 管理后台
         </div>

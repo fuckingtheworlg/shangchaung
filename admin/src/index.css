@@ -1,0 +1,26 @@
+/* 移动端适配补丁：后台主要为 PC 设计，这里只做最小化的手机可用性优化 */
+
+/* wangEditor 工具栏在窄屏改为横向滚动，避免按钮被挤压/裁切导致点不中 */
+.w-e-toolbar {
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* 加大工具栏按钮触摸目标 */
+.w-e-bar-item button {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+@media (max-width: 768px) {
+  /* 手机上压缩内容区边距，给编辑器更多空间 */
+  .ant-layout-content {
+    margin: 8px !important;
+    padding: 12px !important;
+  }
+  /* 头部标题在窄屏缩小，避免和按钮挤在一起 */
+  .ant-layout-header {
+    padding: 0 12px !important;
+  }
+}
