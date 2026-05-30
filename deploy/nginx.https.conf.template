@@ -1,0 +1,79 @@
+# 由 enable-https.sh 自动渲染并复制到 /etc/nginx/conf.d/shangchaun.conf
+# 占位符：
+#   @@DOMAIN@@   主域名（如 www.xiaoran11.top）
+#   @@APP_DIR@@  代码根（如 /opt/shangchaun）
+#   @@CERT@@     证书路径（如 /etc/nginx/certs/www.xiaoran11.top.crt）
+#   @@KEY@@      私钥路径（如 /etc/nginx/certs/www.xiaoran11.top.key）
+
+# 1) 裸域：80 → 301 跳 https://www
+server {
+    listen 80;
+    listen [::]:80;
+    server_name xiaoran11.top;
+    return 301 https://@@DOMAIN@@$request_uri;
+}
+
+# 2) www：80 → 301 跳 https://www（同名升级 HTTPS）
+server {
+    listen 80;
+    listen [::]:80;
+    server_name @@DOMAIN@@;
+    return 301 https://$host$request_uri;
+}
+
+# 3) HTTPS 主服务
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name @@DOMAIN@@;
+
+    ssl_certificate     @@CERT@@;
+    ssl_certificate_key @@KEY@@;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # 强制 HSTS（6 个月），可视需要调整或移除
+    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+
+    client_max_body_size 20m;
+    server_tokens off;
+
+    # 后台管理 SPA
+    location /admin/ {
+        alias @@APP_DIR@@/admin/dist/;
+        index index.html;
+        try_files $uri $uri/ /admin/index.html;
+    }
+
+    location = / {
+        return 302 /admin/;
+    }
+
+    # 后端 API
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # 用户上传图片
+    location /uploads/ {
+        alias @@APP_DIR@@/server/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+    }
+
+    location /health {
+        proxy_pass http://127.0.0.1:3000;
+        access_log off;
+    }
+}

@@ -317,10 +317,14 @@ if ! systemctl is-active --quiet shangchaun-server; then
 fi
 log "shangchaun-server 已运行"
 
-# Nginx
-sed "s|@@APP_DIR@@|${APP_DIR}|g" \
-  "${APP_DIR}/deploy/nginx.conf.template" \
-  > /etc/nginx/conf.d/shangchaun.conf
+# Nginx：如果已配置 HTTPS（含 ssl_certificate），保留不覆盖
+if [[ -f /etc/nginx/conf.d/shangchaun.conf ]] && grep -q 'ssl_certificate' /etc/nginx/conf.d/shangchaun.conf; then
+  log "检测到现有 HTTPS Nginx 配置，跳过 HTTP 模板写入"
+else
+  sed "s|@@APP_DIR@@|${APP_DIR}|g" \
+    "${APP_DIR}/deploy/nginx.conf.template" \
+    > /etc/nginx/conf.d/shangchaun.conf
+fi
 # 关掉默认站点，避免和 default_server 冲突
 for f in /etc/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default; do
   if [[ -e "$f" ]] && [[ ! -e "${f}.disabled-by-shangchaun" ]]; then
