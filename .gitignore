@@ -21,6 +21,9 @@ out/
 *.swo
 *.tsbuildinfo
 
+# admin 源码全为 .ts/.tsx，禁止 tsc 误产的 .js 混入并遮蔽源文件
+admin/src/**/*.js
+
 # OS
 .DS_Store
 Thumbs.db
