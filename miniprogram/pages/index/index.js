@@ -1,4 +1,5 @@
 const { request } = require('../../utils/request.js');
+const { shareTitle } = require('../../config.js');
 
 // 封面宽度固定 200rpx，根据 ratio "W:H" 算高度（单位 rpx）
 function calcCoverHeight(ratio) {
@@ -24,8 +25,24 @@ Page({
   },
 
   onLoad() {
+    wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
     this.loadSettings();
     this.loadFirst();
+  },
+
+  // 转发给好友 / 微信群
+  onShareAppMessage() {
+    return {
+      title: shareTitle,
+      path: '/pages/index/index',
+    };
+  },
+
+  // 分享到朋友圈
+  onShareTimeline() {
+    return {
+      title: shareTitle,
+    };
   },
 
   onPullDownRefresh() {

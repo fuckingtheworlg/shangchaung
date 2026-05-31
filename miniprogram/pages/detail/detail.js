@@ -1,4 +1,5 @@
 const { request } = require('../../utils/request.js');
+const { shareTitle } = require('../../config.js');
 
 Page({
   data: {
@@ -8,12 +9,34 @@ Page({
   },
 
   onLoad(query) {
+    // 显式开启转发 + 分享到朋友圈两个入口
+    wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
     const id = query.id;
     if (!id) {
       wx.showToast({ title: '缺少参数', icon: 'none' });
       return;
     }
     this.fetchDetail(id);
+  },
+
+  // 转发给好友 / 微信群
+  onShareAppMessage() {
+    const item = this.data.item || {};
+    return {
+      title: item.title || shareTitle,
+      path: `/pages/detail/detail?id=${item.id || ''}`,
+      imageUrl: item.cover || '',
+    };
+  },
+
+  // 分享到朋友圈（注意 query 不带 ?）
+  onShareTimeline() {
+    const item = this.data.item || {};
+    return {
+      title: item.title || shareTitle,
+      query: `id=${item.id || ''}`,
+      imageUrl: item.cover || '',
+    };
   },
 
   async fetchDetail(id) {

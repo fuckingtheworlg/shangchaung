@@ -4,4 +4,6 @@
 // - 生产（已备案 + HTTPS）: https://www.xiaoran11.top
 module.exports = {
   baseURL: 'https://www.xiaoran11.top',
+  // 分享卡片默认标题（列表页转发、以及详情页无标题时的兜底）
+  shareTitle: '精选图片',
 };
